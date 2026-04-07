@@ -14,3 +14,5 @@ htmlcov/
 .coverage
 docker-compose*.yml
 Dockerfile
+data/
+*.pkl
