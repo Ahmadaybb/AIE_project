@@ -15,4 +15,3 @@ htmlcov/
 docker-compose*.yml
 Dockerfile
 data/
-*.pkl
