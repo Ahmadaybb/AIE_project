@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import joblib
 import pandas as pd
@@ -22,17 +22,26 @@ class JobInput(BaseModel):
     company_location: str
     company_size: str
 
+def encode(column, value):
+    known_values = list(encoders[column].classes_)
+    if value not in known_values:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unknown value '{value}' for '{column}'. Please use known values: {known_values}"
+        )
+    return encoders[column].transform([value])[0]
+
 @app.post("/predict")
 def predict(input: JobInput):
     data = {
         "work_year": input.work_year,
-        "experience_level": encoders["experience_level"].transform([input.experience_level])[0],
-        "employment_type": encoders["employment_type"].transform([input.employment_type])[0],
-        "job_title": encoders["job_title"].transform([input.job_title])[0],
-        "employee_residence": encoders["employee_residence"].transform([input.employee_residence])[0],
+        "experience_level": encode("experience_level", input.experience_level),
+        "employment_type": encode("employment_type", input.employment_type),
+        "job_title": encode("job_title", input.job_title),
+        "employee_residence": encode("employee_residence", input.employee_residence),
         "remote_ratio": input.remote_ratio,
-        "company_location": encoders["company_location"].transform([input.company_location])[0],
-        "company_size": encoders["company_size"].transform([input.company_size])[0],
+        "company_location": encode("company_location", input.company_location),
+        "company_size": encode("company_size", input.company_size),
     }
 
     df = pd.DataFrame([data])
