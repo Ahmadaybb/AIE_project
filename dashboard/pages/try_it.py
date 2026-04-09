@@ -8,7 +8,7 @@ load_dotenv()
 
 st.set_page_config(page_title="Try the Predictor", page_icon="🎯")
 
-API_URL = os.getenv("API_URL", "https://aie-project.onrender.com")
+API_URL = os.getenv("API_URL", "https://aie-project.onrender.com/docs")
 
 @st.cache_resource
 def get_groq():
