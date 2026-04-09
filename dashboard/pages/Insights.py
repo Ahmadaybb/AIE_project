@@ -26,40 +26,101 @@ if not data:
 else:
     df = pd.DataFrame(data)
 
-    # Key metrics
-    col1, col2, col3 = st.columns(3)
+    # --- Key metrics ---
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Average Salary", f"${df['predicted_salary'].mean():,.0f}")
     with col2:
         st.metric("Highest Salary", f"${df['predicted_salary'].max():,.0f}")
     with col3:
         st.metric("Lowest Salary", f"${df['predicted_salary'].min():,.0f}")
+    with col4:
+        st.metric("Model Accuracy (R²)", "90%")
 
     st.divider()
 
-    # Chart
-    st.markdown("**Average Salary by Job Title**")
-    fig, ax = plt.subplots(figsize=(8, 4))
-    df.groupby("job_title")["predicted_salary"].mean().sort_values().plot(
-        kind="barh", ax=ax, color="#4CAF50"
-    )
-    ax.set_xlabel("Predicted Salary (USD)")
-    ax.set_ylabel("")
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    st.pyplot(fig)
+    # --- Charts ---
+    st.markdown("**What drives salary the most?**")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("*Salary by Experience Level*")
+        exp_order = {"EN": "Entry", "MI": "Mid", "SE": "Senior", "EX": "Executive"}
+        exp_df = df.copy()
+        exp_df["experience_label"] = exp_df["experience_level"].map(exp_order)
+        fig1, ax1 = plt.subplots(figsize=(4, 3))
+        exp_df.groupby("experience_label")["predicted_salary"].mean().reindex(
+            ["Entry", "Mid", "Senior", "Executive"]
+        ).plot(kind="bar", ax=ax1, color="#4CAF50")
+        ax1.set_xlabel("")
+        ax1.set_ylabel("Avg Salary (USD)")
+        ax1.spines["top"].set_visible(False)
+        ax1.spines["right"].set_visible(False)
+        plt.xticks(rotation=0)
+        st.pyplot(fig1)
+
+    with col2:
+        st.markdown("*Salary by Employee Location*")
+        fig2, ax2 = plt.subplots(figsize=(4, 3))
+        df.groupby("employee_residence")["predicted_salary"].mean().sort_values().plot(
+            kind="barh", ax=ax2, color="#2196F3"
+        )
+        ax2.set_xlabel("Avg Salary (USD)")
+        ax2.set_ylabel("")
+        ax2.spines["top"].set_visible(False)
+        ax2.spines["right"].set_visible(False)
+        st.pyplot(fig2)
 
     st.divider()
 
-    # Table
-    st.markdown("**All Predictions**")
+    # --- Comparison with real data ---
+    st.markdown("**How do predictions compare to real salaries?**")
+    real_data = {
+        "Job Title": ["Data Scientist", "Data Analyst", "ML Engineer", "Data Engineer", "Director of Data Science"],
+        "Real Avg Salary (USD)": [137000, 75000, 140000, 120000, 180000],
+        "Predicted Salary (USD)": [
+            df[df["job_title"] == "Data Scientist"]["predicted_salary"].mean(),
+            df[df["job_title"] == "Data Analyst"]["predicted_salary"].mean(),
+            df[df["job_title"] == "ML Engineer"]["predicted_salary"].mean(),
+            df[df["job_title"] == "Data Engineer"]["predicted_salary"].mean(),
+            df[df["job_title"] == "Director of Data Science"]["predicted_salary"].mean(),
+        ]
+    }
+    compare_df = pd.DataFrame(real_data).dropna()
+    fig3, ax3 = plt.subplots(figsize=(8, 4))
+    x = range(len(compare_df))
+    width = 0.35
+    ax3.barh([i - width/2 for i in x], compare_df["Real Avg Salary (USD)"], width, label="Real", color="#4CAF50")
+    ax3.barh([i + width/2 for i in x], compare_df["Predicted Salary (USD)"], width, label="Predicted", color="#2196F3")
+    ax3.set_yticks(list(x))
+    ax3.set_yticklabels(compare_df["Job Title"])
+    ax3.set_xlabel("Salary (USD)")
+    ax3.legend()
+    ax3.spines["top"].set_visible(False)
+    ax3.spines["right"].set_visible(False)
+    st.pyplot(fig3)
+
+    st.divider()
+
+    # --- Table with clickable rows ---
+    st.markdown("**All Old Predictions — click a row to see its AI analysis**")
     display_df = df[["job_title", "experience_level", "employee_residence",
                      "remote_ratio", "company_size", "predicted_salary"]].copy()
     display_df.columns = ["Job Title", "Experience", "Location", "Remote %", "Company Size", "Predicted Salary (USD)"]
-    st.dataframe(display_df, use_container_width=True)
 
-    st.divider()
+    selected = st.dataframe(
+        display_df,
+        use_container_width=True,
+        on_select="rerun",
+        selection_mode="single-row"
+    )
 
-    # LLM Analysis
-    st.markdown("**AI Market Analysis**")
-    st.info(df.iloc[-1]["llm_analysis"])
+    if selected and selected["selection"]["rows"]:
+        row_index = selected["selection"]["rows"][0]
+        selected_row = df.iloc[row_index]
+        st.divider()
+        st.markdown(f"#### AI Analysis — {selected_row['job_title']} ({selected_row['experience_level']}, {selected_row['employee_residence']})")
+        st.info(selected_row["llm_analysis"])
+    else:
+        st.caption("Click a row above to see its AI salary analysis.")

@@ -8,9 +8,12 @@ load_dotenv()
 
 st.set_page_config(page_title="Try the Predictor", page_icon="🎯")
 
+API_URL = os.getenv("API_URL", "https://aie-project.onrender.com")
+
 @st.cache_resource
 def get_groq():
-    return Groq(api_key=os.getenv("GROQ_API_KEY"))
+    api_key = os.getenv("GROQ_API_KEY")
+    return Groq(api_key=api_key)
 
 client = get_groq()
 
@@ -77,6 +80,7 @@ with col2:
     remote = st.selectbox("Work Arrangement", list(REMOTE_MAP.keys()))
 
 st.divider()
+st.caption("ℹ️ Salary estimates are based on data science job market data from 2020–2022. Results reflect market trends from that period.")
 
 if st.button("Get Salary Estimate", type="primary"):
     payload = {
@@ -90,14 +94,13 @@ if st.button("Get Salary Estimate", type="primary"):
         "company_size": COMPANY_SIZE_MAP[company_size]
     }
 
-    response = requests.post("http://127.0.0.1:8000/predict", json=payload)
+    response = requests.post(f"{API_URL}/predict", json=payload)
 
     if response.status_code == 200:
         salary = response.json()["predicted_salary_usd"]
         st.success(f"Estimated Market Salary: **${salary:,.2f} USD/year**")
         st.caption(f"For a {experience} {job_title} based in {residence}, working {remote.lower()} at a {company_size.split('(')[0].strip().lower()} company.")
 
-        # LLM explanation
         with st.spinner("Generating AI explanation..."):
             prompt = f"""
 You are a salary analyst. Explain in 2-3 short paragraphs why a {experience} {job_title} 
@@ -107,12 +110,19 @@ would earn ${salary:,.2f} USD per year.
 Be specific about how location, experience, and role affect the salary.
 Keep it friendly and easy to understand for an HR manager.
 """
-            chat = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt}],
-                model="llama-3.3-70b-versatile"
-            )
-            explanation = chat.choices[0].message.content
             st.markdown("#### Why this salary?")
-            st.write(explanation)
+            placeholder = st.empty()
+            full_text = ""
+
+            stream = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt}],
+                model="llama-3.3-70b-versatile",
+                stream=True
+            )
+
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    full_text += chunk.choices[0].delta.content
+                    placeholder.markdown(full_text)
     else:
         st.error(f"Could not get prediction. Error: {response.text}")

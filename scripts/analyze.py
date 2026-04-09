@@ -2,13 +2,11 @@ import requests
 from supabase import create_client
 from dotenv import load_dotenv
 import os
-import json
 
 load_dotenv()
 
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-# Multiple input combinations to predict
 job_combinations = [
     {"work_year": 2022, "experience_level": "SE", "employment_type": "FT", "job_title": "Data Scientist", "employee_residence": "US", "remote_ratio": 100, "company_location": "US", "company_size": "L"},
     {"work_year": 2022, "experience_level": "EN", "employment_type": "FT", "job_title": "Data Analyst", "employee_residence": "US", "remote_ratio": 0, "company_location": "US", "company_size": "S"},
@@ -24,19 +22,14 @@ def get_prediction(payload):
     else:
         raise Exception(f"API error: {response.status_code} - {response.text}")
 
-def get_llm_analysis(predictions_summary):
+def get_llm_analysis(salary, payload):
     prompt = f"""
-You are a data analyst writing a report about data science salaries around the world.
+You are a salary analyst. Explain in 2-3 short paragraphs why a {payload['experience_level']} {payload['job_title']} 
+based in {payload['employee_residence']}, working with {payload['remote_ratio']}% remote at a {payload['company_size']} company
+would earn ${salary:,.2f} USD per year.
 
-Here are salary predictions for different data science roles:
-{predictions_summary}
-
-Write a compelling narrative (3-4 paragraphs) that:
-1. Highlights the key differences in salaries across roles, experience levels, and locations
-2. Tells a story about what drives salary in data science
-3. Points out the most surprising finding
-
-Be specific, use the numbers, and make it interesting to read.
+Be specific about how location, experience, and role affect the salary.
+Keep it friendly and easy to understand for an HR manager.
 """
     response = requests.post("http://localhost:11434/api/generate", json={
         "model": "tinyllama",
@@ -60,26 +53,15 @@ def save_to_supabase(payload, salary, analysis):
     }
     supabase.table("predictions").insert(data).execute()
 
-# Run predictions
-results = []
+# Run each prediction individually
 for combo in job_combinations:
     salary = get_prediction(combo)
     print(f"{combo['job_title']} ({combo['experience_level']}, {combo['employee_residence']}): ${salary:,.2f}")
-    results.append({**combo, "salary": salary})
 
-# Build summary for LLM
-summary = "\n".join([
-    f"- {r['job_title']} | {r['experience_level']} | {r['employee_residence']} | ${r['salary']:,.2f}"
-    for r in results
-])
+    analysis = get_llm_analysis(salary, combo)
+    print(f"Analysis: {analysis[:100]}...")
 
-# Get one narrative for all predictions
-print("\nGenerating LLM analysis...")
-analysis = get_llm_analysis(summary)
-print(f"\nLLM Analysis:\n{analysis}")
+    save_to_supabase(combo, salary, analysis)
+    print("Saved.\n")
 
-# Save each prediction with the shared analysis
-for r in results:
-    save_to_supabase(r, r["salary"], analysis)
-
-print("\nAll saved to Supabase.")
+print("All done.")
