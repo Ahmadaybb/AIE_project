@@ -8,11 +8,11 @@ load_dotenv()
 supabase = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 job_combinations = [
-    {"work_year": 2022, "experience_level": "SE", "employment_type": "FT", "job_title": "Data Scientist", "employee_residence": "US", "remote_ratio": 100, "company_location": "US", "company_size": "L"},
-    {"work_year": 2022, "experience_level": "EN", "employment_type": "FT", "job_title": "Data Analyst", "employee_residence": "US", "remote_ratio": 0, "company_location": "US", "company_size": "S"},
-    {"work_year": 2022, "experience_level": "MI", "employment_type": "FT", "job_title": "ML Engineer", "employee_residence": "GB", "remote_ratio": 50, "company_location": "GB", "company_size": "M"},
-    {"work_year": 2022, "experience_level": "SE", "employment_type": "FT", "job_title": "Data Engineer", "employee_residence": "DE", "remote_ratio": 100, "company_location": "DE", "company_size": "L"},
-    {"work_year": 2022, "experience_level": "EX", "employment_type": "FT", "job_title": "Director of Data Science", "employee_residence": "US", "remote_ratio": 100, "company_location": "US", "company_size": "L"},
+    {"work_year": 2021, "experience_level": "MI", "employment_type": "FT", "job_title": "Machine Learning Engineer", "employee_residence": "GB", "remote_ratio": 100, "company_location": "GB", "company_size": "M"},
+    {"work_year": 2020, "experience_level": "SE", "employment_type": "FT", "job_title": "Research Scientist", "employee_residence": "DE", "remote_ratio": 50, "company_location": "DE", "company_size": "L"},
+    {"work_year": 2022, "experience_level": "EN", "employment_type": "FT", "job_title": "Analytics Engineer", "employee_residence": "FR", "remote_ratio": 0, "company_location": "FR", "company_size": "S"},
+    {"work_year": 2021, "experience_level": "EX", "employment_type": "FT", "job_title": "Head of Data", "employee_residence": "US", "remote_ratio": 100, "company_location": "US", "company_size": "L"},
+    {"work_year": 2020, "experience_level": "MI", "employment_type": "CT", "job_title": "NLP Engineer", "employee_residence": "CA", "remote_ratio": 50, "company_location": "CA", "company_size": "M"},
 ]
 
 def get_prediction(payload):

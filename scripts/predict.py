@@ -1,16 +1,6 @@
+#only for testing
 import requests
-
-# Example input
-payload = {
-    "work_year": 2022,
-    "experience_level": 2,
-    "employment_type": 1,
-    "job_title": 3,
-    "employee_residence": 2,
-    "remote_ratio": 100,
-    "company_location": 2,
-    "company_size": 1
-}
+payload = {"work_year": 2021, "experience_level": "MI", "employment_type": "FT", "job_title": "Machine Learning Engineer", "employee_residence": "GB", "remote_ratio": 100, "company_location": "GB", "company_size": "M"}
 
 response = requests.post("http://127.0.0.1:8000/predict", json=payload)
 
